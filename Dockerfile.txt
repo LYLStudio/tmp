@@ -1,0 +1,31 @@
+ARG ALMA_VERSION=9
+
+# 2. 在 FROM 中動態引用這個變數
+FROM almalinux:${ALMA_VERSION}
+
+RUN dnf makecache && \
+    dnf groupinstall -y --nodocs "Development Tools" && \
+    dnf install -y --nodocs pcre2-devel openssl-devel wget\
+                   procps-ng iproute net-tools vim psmisc perl && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
+
+# Create a non-root user and project-relative directories
+RUN useradd -m -s /bin/bash esbadmin \
+    && mkdir -p /home/esbadmin /vol \
+    && chown -R esbadmin:esbadmin /home/esbadmin /vol \
+    && chmod -R 755 /home/esbadmin /vol
+
+VOLUME ["/vol"]
+
+EXPOSE 80
+
+WORKDIR /vol
+
+USER esbadmin
+
+# ===== 新增：設定 esbadmin 的 ll 指令與語法高亮度 =====
+RUN echo "alias ls='ls --color=auto'" >> ~/.bashrc && \
+    echo "alias ll='ls -l'" >> ~/.bashrc
+
+CMD ["/bin/bash"]
